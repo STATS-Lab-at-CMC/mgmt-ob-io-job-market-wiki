@@ -22,7 +22,7 @@ KEEP_COLS = [
 # Header-row noise: values that mean "no data"
 _TT_GARBAGE = {
     "nan", "none", "", "​", "type / position", "tt-ntt-postdoc",
-    "tt/ntt", "tt-ntt", "tt-ntt-postdoc ", "tenure track", "tenure-track",
+    "tt/ntt", "tt-ntt", "tt-ntt-postdoc ",
     "do not sort", "unclear", "n/a", "?",
 }
 
@@ -33,17 +33,27 @@ def norm_tt(v):
     sl = s.lower()
     if sl in _TT_GARBAGE or len(sl) <= 1:
         return None
-    # Exact / near-exact matches first
-    if sl in ("tt", "yes", "tt "):                     return "TT"
-    if sl in ("ntt", "no", "ntt "):                    return "NTT"
+    # Visiting / Postdoc / Fixed Term first (before TT checks)
     if "visiting" in sl:                               return "Visiting"
     if "postdoc" in sl or "post-doc" in sl:            return "Postdoc"
     if "fixed" in sl or "rolling contract" in sl:      return "Fixed Term"
-    # Prefix patterns
-    if sl.startswith("tt x") or sl.startswith("tt,"):  return "TT"
-    if sl.startswith("ntt") or sl.startswith("non-tenure"):  return "NTT"
-    # "TT/NTT (either)" — keep as distinct
+    # Mixed TT+NTT
     if "tt/ntt" in sl or "either" in sl:               return "TT or NTT"
+    if re.search(r'\bntt\b', sl) and re.search(r'\btt\b', sl): return "TT or NTT"
+    if "ntt or tt" in sl or "tt or ntt" in sl:         return "TT or NTT"
+    if re.search(r'tt\s*\(\d+\)\s*\+\s*ntt', sl):     return "TT or NTT"
+    if "tenure track/non tenure" in sl:                return "TT or NTT"
+    # NTT signals
+    if sl in ("ntt", "no", "no ", "nt", "non-tenure track", "ntt "):  return "NTT"
+    if sl.startswith("ntt") or sl.startswith("non-tenure"):  return "NTT"
+    if "non-tenure" in sl or "non tenure" in sl:       return "NTT"
+    # TT signals — "tenure track" spelled out
+    if "tenure track" in sl or "tenure-track" in sl:  return "TT"
+    if "tenured" in sl:                                return "TT"
+    if sl in ("tt", "yes", "tt ", "ft/tt", "yes?"):   return "TT"
+    if sl in ("yes (both)", "yes (not for asst)"):     return "TT"
+    if sl.startswith("tt x") or sl.startswith("tt,"):  return "TT"
+    if sl.startswith("tt "):                            return "TT"
     # Longer strings — look for primary signal
     if re.search(r'\btt\b', sl) and not re.search(r'\bntt\b', sl):  return "TT"
     if re.search(r'\bntt\b', sl):                      return "NTT"

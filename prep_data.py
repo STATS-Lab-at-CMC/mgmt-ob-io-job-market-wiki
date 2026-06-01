@@ -118,6 +118,37 @@ def broad_region(raw):
         return "International / Remote"
     return None
 
+# ── Start date grouping (for filter dropdown) ─────────────────────────────────
+def group_start_date(v):
+    """Normalize raw start date to a sortable group like 'Fall 2026'."""
+    if not v or str(v).strip().lower() in ('nan', 'none', ''):
+        return None
+    vl = str(v).strip().lower()
+    m = re.search(r'20(\d{2})', vl)
+    if not m:
+        return None
+    year = '20' + m.group(1)
+    if any(x in vl for x in ('fall', 'aug', 'sep', 'oct', 'nov')):
+        return f'Fall {year}'
+    if any(x in vl for x in ('spring', 'spr', 'jan', 'feb', 'mar', 'apr')):
+        return f'Spring {year}'
+    if any(x in vl for x in ('summer', 'sum', 'may', 'jun', 'jul')):
+        return f'Summer {year}'
+    if any(x in vl for x in ('winter', 'win', 'dec')):
+        return f'Winter {year}'
+    return year  # year only if season unclear
+
+def _sd_sort_key(g):
+    """Sort 'Fall 2026' etc. chronologically descending."""
+    season_order = {'spring': 1, 'summer': 2, 'fall': 3, 'winter': 4}
+    parts = g.lower().split()
+    try:
+        year = int(parts[-1])
+        season = season_order.get(parts[0], 0)
+        return (-year, -season)
+    except (ValueError, IndexError):
+        return (0, 0)
+
 # ── Start date cleanup ────────────────────────────────────────────────────────
 _START_PREFIXES = ('fall', 'spring', 'spr ', 'sum', 'win', 'aut', 'jan', 'feb', 'mar',
                    'apr', 'may ', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec',
@@ -171,6 +202,7 @@ df["area_category"] = df["area"].apply(categorize_area) if "area" in df.columns 
 df["region_broad"]  = df["region"].apply(broad_region) if "region" in df.columns else None
 df["tt_ntt"]        = df["tt_ntt"].apply(norm_tt) if "tt_ntt" in df.columns else None
 df["start_date"]    = df["start_date"].apply(clean_start_date) if "start_date" in df.columns else None
+df["start_date_group"] = df["start_date"].apply(group_start_date)
 
 # Year per sheet (for meta/stats only — not exposed in table)
 year_map = {}
@@ -195,6 +227,7 @@ meta = {
     "regions_broad":   sorted([r for r in df["region_broad"].dropna().unique().tolist()]),
     "tt_ntt_vals":     sorted([v for v in df["tt_ntt"].dropna().unique().tolist()]),
     "tabs":            sorted(df["tab"].dropna().unique().tolist()),
+    "start_date_groups": sorted(df["start_date_group"].dropna().unique().tolist(), key=_sd_sort_key),
 }
 
 out_path = os.path.join(script_dir, OUT)

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mgmt / OB / IO Job Market Wiki</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; }
+  body { background: #f8fafc; }
+
+  /* Scrollable table wrapper */
+  .table-scroll { overflow-x: auto; }
+
+  /* Sticky header row */
+  thead th { position: sticky; top: 0; z-index: 10; }
+
+  /* Row hover */
+  tbody tr { transition: background 0.1s; }
+  tbody tr:hover { background: #f0f9ff !important; }
+
+  /* Custom select styling */
+  select {
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px !important;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #6366f1;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Badge base */
+  .badge {
+    display: inline-flex; align-items: center;
+    padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; white-space: nowrap;
+  }
+
+  /* Sortable column header */
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { background: #e0e7ff; }
+  th.sort-asc  .sort-arrow::after { content: ' ↑'; }
+  th.sort-desc .sort-arrow::after { content: ' ↓'; }
+
+  /* Pagination button */
+  .page-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 34px; height: 34px; border-radius: 6px; font-size: 13px;
+    font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .page-btn:hover:not(.active):not(.disabled) { background: #e0e7ff; color: #4338ca; }
+  .page-btn.active  { background: #6366f1; color: white; }
+  .page-btn.disabled { opacity: 0.35; cursor: default; }
+
+  /* Tooltip */
+  .has-tip { position: relative; cursor: help; }
+  .has-tip:hover .tip {
+    opacity: 1; pointer-events: auto; transform: translateY(0);
+  }
+  .tip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: #1e293b; color: #f8fafc;
+    font-size: 11px; padding: 5px 9px; border-radius: 6px;
+    white-space: nowrap; z-index: 100;
+    opacity: 0; pointer-events: none; transition: all 0.15s;
+    max-width: 300px; white-space: normal; text-align: left;
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<header class="bg-gradient-to-r from-indigo-700 to-violet-700 text-white shadow-lg">
+  <div class="max-w-screen-2xl mx-auto px-6 py-5 flex flex-wrap gap-4 items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight">🎓 Mgmt / OB / IO Job Market Wiki</h1>
+      <p class="text-indigo-200 text-sm mt-0.5">Aggregated from community-maintained Google Sheets · non-official · use at your own risk</p>
+    </div>
+    <div id="header-stats" class="flex gap-6 text-center hidden">
+      <div><div class="text-2xl font-bold" id="stat-total">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Listings</div></div>
+      <div><div class="text-2xl font-bold" id="stat-sheets">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Source Sheets</div></div>
+      <div><div class="text-2xl font-bold" id="stat-years">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Year Span</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ FILTER BAR ══════════════════════════════════════════════════════════ -->
+<div class="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-screen-2xl mx-auto px-6 py-3">
+
+    <!-- Row 1: Search -->
+    <div class="relative mb-3">
+      <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+      </svg>
+      <input id="search-input" type="search" placeholder="Search institution, area, notes, location…"
+        class="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition">
+    </div>
+
+    <!-- Row 2: Dropdowns -->
+    <div class="flex flex-wrap gap-2 items-center">
+      <select id="filter-tab" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+        <option value="">All Tabs</option>
+        <option value="Micro Jobs">Micro Jobs</option>
+        <option value="Macro Jobs">Macro Jobs</option>
+      </select>
+
+      <select id="filter-category" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+        <option value="">All Areas</option>
+      </select>
+
+      <select id="filter-tt" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+        <option value="">All TT/NTT</option>
+      </select>
+
+      <select id="filter-region" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+        <option value="">All Regions</option>
+      </select>
+
+      <select id="filter-year" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+        <option value="">All Years</option>
+      </select>
+
+      <!-- Hide Expired toggle -->
+      <label class="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none ml-1">
+        <input id="toggle-expired" type="checkbox" checked class="w-4 h-4 rounded accent-indigo-500">
+        Hide expired
+      </label>
+
+      <button id="btn-clear" class="ml-auto text-sm text-indigo-600 font-medium hover:text-indigo-800 transition px-3 py-2 rounded-lg hover:bg-indigo-50">
+        ✕ Clear filters
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESULTS BAR + TABLE ════════════════════════════════════════════════ -->
+<div class="max-w-screen-2xl mx-auto px-6 py-4">
+
+  <!-- Status / result count -->
+  <div class="flex items-center justify-between mb-3">
+    <div id="result-count" class="text-sm text-slate-500 font-medium"></div>
+    <div id="pagination-top" class="flex gap-1"></div>
+  </div>
+
+  <!-- Loading state -->
+  <div id="loading" class="flex flex-col items-center justify-center py-24 gap-4">
+    <div class="spinner"></div>
+    <div class="text-slate-400 text-sm">Loading job data…</div>
+  </div>
+
+  <!-- Table -->
+  <div id="table-wrap" class="table-scroll rounded-xl border border-slate-200 shadow-sm hidden">
+    <table class="w-full text-sm border-collapse">
+      <thead>
+        <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[180px]" data-col="institution">Institution <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[140px]" data-col="rank">Rank <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[100px]" data-col="area">Area (raw) <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[140px]" data-col="area_category">Category <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tt_ntt">TT/NTT <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[130px]" data-col="location">Location <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="deadline">Deadline <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="year">Year <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tab">Tab <span class="sort-arrow"></span></th>
+          <th class="px-4 py-3 text-left font-semibold border-b border-slate-200">Link</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- Empty state -->
+  <div id="empty-state" class="hidden text-center py-24">
+    <div class="text-5xl mb-4">🔍</div>
+    <div class="text-lg font-semibold text-slate-700">No listings match your filters</div>
+    <div class="text-slate-400 text-sm mt-1">Try adjusting your search or clearing some filters</div>
+  </div>
+
+  <!-- Pagination bottom -->
+  <div id="pagination-bot" class="flex justify-center gap-1 mt-5"></div>
+
+  <!-- Footer -->
+  <p class="text-center text-xs text-slate-400 mt-8 mb-4">
+    Data sourced from community-maintained Google Sheets. Not affiliated with any official organization.
+    Refresh the database by running <code>build_jobs_db.py</code> + <code>prep_data.py</code>.
+    <br>Built by <a href="https://github.com/STATS-Lab-at-CMC" class="text-indigo-500 hover:underline">STATS Lab at CMC</a>.
+  </p>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// DATA + STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let ALL_JOBS = [];
+let filtered = [];
+let currentPage = 1;
+const PAGE_SIZE = 50;
+let sortCol = '';
+let sortDir = 'asc';
+
+// ─── Color maps ────────────────────────────────────────────────────────────
+const CAT_COLORS = {
+  "IO Psychology":           "bg-emerald-100 text-emerald-800",
+  "OB / HR":                 "bg-indigo-100 text-indigo-800",
+  "Organizational Behavior": "bg-blue-100 text-blue-800",
+  "HR / HRM":                "bg-cyan-100 text-cyan-800",
+  "Leadership":              "bg-violet-100 text-violet-800",
+  "Strategy":                "bg-amber-100 text-amber-800",
+  "Strategy / Entrepreneurship": "bg-orange-100 text-orange-800",
+  "Entrepreneurship":        "bg-red-100 text-red-800",
+  "Management (General)":    "bg-slate-100 text-slate-700",
+  "International Business":  "bg-teal-100 text-teal-800",
+  "Finance / Accounting":    "bg-lime-100 text-lime-800",
+  "Marketing":               "bg-pink-100 text-pink-800",
+  "Operations / SCM":        "bg-yellow-100 text-yellow-800",
+  "Other / Unspecified":     "bg-gray-100 text-gray-500",
+};
+const TT_COLORS = {
+  "TT":         "bg-green-100 text-green-800",
+  "NTT":        "bg-rose-100 text-rose-800",
+  "Visiting":   "bg-sky-100 text-sky-800",
+  "Fixed Term": "bg-orange-100 text-orange-800",
+  "Postdoc":    "bg-purple-100 text-purple-800",
+};
+const TAB_COLORS = {
+  "Micro Jobs": "bg-teal-100 text-teal-700",
+  "Macro Jobs": "bg-violet-100 text-violet-700",
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════════════════════════════════
+fetch('data.json')
+  .then(r => r.json())
+  .then(data => {
+    ALL_JOBS = data.jobs;
+    const meta = data.meta;
+
+    // Populate header stats
+    document.getElementById('stat-total').textContent  = meta.total.toLocaleString();
+    document.getElementById('stat-sheets').textContent = meta.sheets;
+    const yrs = meta.years;
+    document.getElementById('stat-years').textContent  = yrs.length > 1
+      ? `${yrs[yrs.length-1]}–${yrs[0]}`
+      : (yrs[0] || '?');
+    document.getElementById('header-stats').classList.remove('hidden');
+
+    // Populate filter dropdowns
+    populateSelect('filter-category', meta.area_categories);
+    populateSelect('filter-tt',       meta.tt_ntt_vals);
+    populateSelect('filter-region',   meta.regions_broad);
+    populateSelect('filter-year',     meta.years);
+
+    // Show table
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('table-wrap').classList.remove('hidden');
+
+    applyFilters();
+  })
+  .catch(err => {
+    document.getElementById('loading').innerHTML =
+      `<div class="text-red-500 font-medium">Failed to load data.json: ${err.message}</div>`;
+  });
+
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  values.forEach(v => {
+    const opt = document.createElement('option');
+    opt.value = v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTER LOGIC
+// ═══════════════════════════════════════════════════════════════════════════
+let debounceTimer;
+function onChange() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => { currentPage = 1; applyFilters(); }, 180);
+}
+
+document.getElementById('search-input').addEventListener('input',    onChange);
+document.getElementById('filter-tab').addEventListener('change',     onChange);
+document.getElementById('filter-category').addEventListener('change',onChange);
+document.getElementById('filter-tt').addEventListener('change',      onChange);
+document.getElementById('filter-region').addEventListener('change',  onChange);
+document.getElementById('filter-year').addEventListener('change',    onChange);
+document.getElementById('toggle-expired').addEventListener('change', onChange);
+document.getElementById('btn-clear').addEventListener('click', () => {
+  document.getElementById('search-input').value = '';
+  ['filter-tab','filter-category','filter-tt','filter-region','filter-year'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('toggle-expired').checked = true;
+  currentPage = 1; applyFilters();
+});
+
+function applyFilters() {
+  const q         = document.getElementById('search-input').value.toLowerCase().trim();
+  const tab       = document.getElementById('filter-tab').value;
+  const cat       = document.getElementById('filter-category').value;
+  const tt        = document.getElementById('filter-tt').value;
+  const region    = document.getElementById('filter-region').value;
+  const year      = document.getElementById('filter-year').value;
+  const hideExp   = document.getElementById('toggle-expired').checked;
+
+  filtered = ALL_JOBS.filter(j => {
+    if (tab    && j.tab           !== tab)    return false;
+    if (cat    && j.area_category !== cat)    return false;
+    if (tt     && j.tt_ntt        !== tt)     return false;
+    if (region && j.region_broad  !== region) return false;
+    if (year   && j.year          !== year)   return false;
+    if (hideExp && j.expired && j.expired.toLowerCase() === 'yes') return false;
+    if (q) {
+      const haystack = [j.institution, j.area, j.rank, j.location, j.notes, j.area_category]
+        .map(v => (v || '').toLowerCase()).join(' ');
+      if (!q.split(/\s+/).every(tok => haystack.includes(tok))) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  if (sortCol) {
+    filtered.sort((a, b) => {
+      const av = (a[sortCol] || '').toString().toLowerCase();
+      const bv = (b[sortCol] || '').toString().toLowerCase();
+      return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }
+
+  renderTable();
+  renderPagination();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDER TABLE
+// ═══════════════════════════════════════════════════════════════════════════
+function renderTable() {
+  const tbody = document.getElementById('tbody');
+  const empty = document.getElementById('empty-state');
+  const wrap  = document.getElementById('table-wrap');
+  const count = document.getElementById('result-count');
+
+  count.textContent = filtered.length === ALL_JOBS.length
+    ? `${filtered.length.toLocaleString()} listings`
+    : `${filtered.length.toLocaleString()} of ${ALL_JOBS.length.toLocaleString()} listings`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.classList.remove('hidden');
+    wrap.classList.add('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+  wrap.classList.remove('hidden');
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filtered.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = page.map((j, i) => {
+    const odd = (start + i) % 2 === 0;
+    const bg  = odd ? 'bg-white' : 'bg-slate-50/70';
+
+    const catCls  = CAT_COLORS[j.area_category]  || 'bg-gray-100 text-gray-600';
+    const ttCls   = TT_COLORS[j.tt_ntt]          || 'bg-gray-100 text-gray-600';
+    const tabCls  = TAB_COLORS[j.tab]            || 'bg-gray-100 text-gray-600';
+
+    const instCell = j.institution
+      ? `<span class="font-medium text-slate-800">${esc(j.institution)}</span>`
+      : `<span class="text-slate-400 italic text-xs">—</span>`;
+
+    const rankCell = j.rank
+      ? `<span class="text-slate-700">${esc(j.rank)}</span>`
+      : `<span class="text-slate-300">—</span>`;
+
+    const areaCell = j.area
+      ? `<span class="text-slate-600 text-xs">${esc(shortStr(j.area, 35))}</span>`
+      : `<span class="text-slate-300">—</span>`;
+
+    const catCell = j.area_category
+      ? `<span class="badge ${catCls}">${esc(j.area_category)}</span>`
+      : '';
+
+    const ttCell = j.tt_ntt
+      ? `<span class="badge ${ttCls}">${esc(j.tt_ntt)}</span>`
+      : `<span class="text-slate-300">—</span>`;
+
+    const locCell = j.location
+      ? `<span class="text-slate-600 text-xs">${esc(shortStr(j.location, 30))}</span>`
+      : `<span class="text-slate-300">—</span>`;
+
+    const dlCell = j.deadline
+      ? `<span class="text-slate-700 font-mono text-xs">${esc(shortStr(j.deadline, 12))}</span>`
+      : `<span class="text-slate-300">—</span>`;
+
+    const yearCell = `<span class="text-slate-500 text-xs font-mono">${esc(j.year || '?')}</span>`;
+
+    const tabCell = j.tab
+      ? `<span class="badge ${tabCls}">${esc(j.tab.replace(' Jobs', ''))}</span>`
+      : '';
+
+    const linkCell = j.link
+      ? `<a href="${esc(j.link)}" target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 text-xs font-medium">
+            Apply ↗
+         </a>`
+      : `<span class="text-slate-300">—</span>`;
+
+    // Notes tooltip
+    const notesTip = j.notes
+      ? `<div class="has-tip ml-1 text-slate-400 inline-block">
+           <svg class="w-3.5 h-3.5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/>
+           </svg>
+           <div class="tip">${esc(shortStr(j.notes, 320))}</div>
+         </div>`
+      : '';
+
+    return `<tr class="${bg} border-b border-slate-100 text-sm align-top">
+      <td class="px-4 py-2.5">${instCell}${notesTip}</td>
+      <td class="px-4 py-2.5">${rankCell}</td>
+      <td class="px-4 py-2.5">${areaCell}</td>
+      <td class="px-4 py-2.5">${catCell}</td>
+      <td class="px-4 py-2.5">${ttCell}</td>
+      <td class="px-4 py-2.5">${locCell}</td>
+      <td class="px-4 py-2.5">${dlCell}</td>
+      <td class="px-4 py-2.5">${yearCell}</td>
+      <td class="px-4 py-2.5">${tabCell}</td>
+      <td class="px-4 py-2.5">${linkCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function shortStr(s, n) {
+  if (!s) return '';
+  s = String(s);
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PAGINATION
+// ═══════════════════════════════════════════════════════════════════════════
+function renderPagination() {
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  ['pagination-top','pagination-bot'].forEach(id => {
+    const el = document.getElementById(id);
+    if (totalPages <= 1) { el.innerHTML = ''; return; }
+    el.innerHTML = buildPages(totalPages);
+  });
+}
+
+function buildPages(total) {
+  const cur = currentPage;
+  let pages = new Set([1, total, cur, cur-1, cur+1, cur-2, cur+2].filter(p => p >= 1 && p <= total));
+  pages = [...pages].sort((a,b) => a-b);
+
+  let html = '';
+  html += btn(cur > 1 ? cur-1 : null, '‹', cur <= 1);
+  let prev = null;
+  for (const p of pages) {
+    if (prev && p - prev > 1) html += `<span class="page-btn text-slate-300">…</span>`;
+    html += btn(p, p, false, p === cur);
+    prev = p;
+  }
+  html += btn(cur < total ? cur+1 : null, '›', cur >= total);
+  return html;
+}
+
+function btn(page, label, disabled, active = false) {
+  const cls = ['page-btn border border-slate-200',
+    active   ? 'active' : 'bg-white text-slate-600',
+    disabled ? 'disabled' : ''
+  ].join(' ');
+  const onclick = page && !disabled && !active ? `goPage(${page})` : '';
+  return `<button class="${cls}" ${onclick ? `onclick="${onclick}"` : ''} ${disabled ? 'disabled' : ''}>${label}</button>`;
+}
+
+function goPage(p) {
+  currentPage = p;
+  renderTable();
+  renderPagination();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SORTING
+// ═══════════════════════════════════════════════════════════════════════════
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortCol === col) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortCol = col; sortDir = 'asc';
+    }
+    // Update header classes
+    document.querySelectorAll('th.sortable').forEach(t => {
+      t.classList.remove('sort-asc','sort-desc');
+    });
+    th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    currentPage = 1;
+    applyFilters();
+  });
+});
+</script>
+</body>
+</html>

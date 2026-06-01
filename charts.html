@@ -35,9 +35,9 @@
         <h1 class="text-2xl font-bold tracking-tight">🎓 Management Job Market Searchable Database</h1>
         <p class="text-indigo-200 text-sm mt-0.5">Aggregated from community-maintained Google Sheets · non-official · use at your own risk</p>
       </div>
-      <div id="header-stats" class="flex gap-6 text-center hidden">
+      <div id="header-stats" class="flex gap-6 text-center">
         <div><div class="text-2xl font-bold" id="stat-total">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Listings</div></div>
-        <div><div class="text-2xl font-bold" id="stat-sheets">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Source Sheets</div></div>
+        <div><div class="text-2xl font-bold" id="stat-sheets">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Market Cycles</div></div>
         <div><div class="text-2xl font-bold" id="stat-years">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Year Span</div></div>
       </div>
     </div>
@@ -85,7 +85,7 @@
     <!-- ── Row 1: Total over time (full width) ──────────────────────────── -->
     <div class="chart-card">
       <h2>Total Listings by Market Year</h2>
-      <p>Each bar = one annual hiring cycle. <strong>Label = starting year</strong> — e.g. "2025" means the 2025–26 academic job market (jobs posted ~spring 2026).</p>
+      <p>Each bar = one annual hiring cycle. <strong>Label = starting year</strong> — e.g. <strong>"2025"</strong> = the 2025–26 academic job market, with positions starting ~fall 2026.</p>
       <div class="h-64"><canvas id="chart-total"></canvas></div>
     </div>
 
@@ -201,8 +201,6 @@ fetch('data.json')
     const yrs = meta.years;
     document.getElementById('stat-years').textContent  = yrs.length > 1
       ? `${yrs[yrs.length-1]}–${yrs[0]}` : (yrs[0] || '?');
-    document.getElementById('header-stats').classList.remove('hidden');
-
     VALID_YEARS = [...new Set(jobs.map(j => j.year).filter(y => y && y !== '?'))].sort();
     // Academic year labels for x-axis: "2025" → "2025-26"
     YEAR_LABELS = VALID_YEARS.map(y => `${y}-${(parseInt(y)+1).toString().slice(-2)}`);

@@ -278,7 +278,8 @@ records = df.to_dict(orient="records")
 
 meta = {
     "total":           len(records),
-    "sheets":          df["sheet_id"].nunique(),
+    # Count only sheets with an identified market year (excludes 2 sheets with unknown dates)
+    "sheets":          len({y for y in year_map.values() if y}),
     "years":           sorted({v for v in year_map.values() if v}, reverse=True),
     "generated":       pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
     "area_categories": sorted(df["area_category"].dropna().unique().tolist()),

@@ -83,17 +83,19 @@
 
 <!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
 <header class="bg-gradient-to-r from-indigo-700 to-violet-700 text-white shadow-lg">
-  <div class="max-w-screen-2xl mx-auto px-6 py-5 flex flex-wrap gap-4 items-center justify-between">
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight">🎓 Management Job Market Searchable Database</h1>
-      <p class="text-indigo-200 text-sm mt-0.5">Aggregated from community-maintained Google Sheets · non-official · use at your own risk</p>
+  <div class="max-w-screen-2xl mx-auto px-6 py-5">
+    <div class="flex flex-wrap gap-4 items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">🎓 Management Job Market Searchable Database</h1>
+        <p class="text-indigo-200 text-sm mt-0.5">Aggregated from community-maintained Google Sheets · non-official · use at your own risk</p>
+      </div>
+      <div id="header-stats" class="flex gap-6 text-center">
+        <div><div class="text-2xl font-bold" id="stat-total">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Listings</div></div>
+        <div><div class="text-2xl font-bold" id="stat-sheets">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Market Cycles</div></div>
+        <div><div class="text-2xl font-bold" id="stat-years">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Year Span</div></div>
+      </div>
     </div>
-    <div id="header-stats" class="flex gap-6 text-center hidden">
-      <div><div class="text-2xl font-bold" id="stat-total">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Listings</div></div>
-      <div><div class="text-2xl font-bold" id="stat-sheets">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Source Sheets</div></div>
-      <div><div class="text-2xl font-bold" id="stat-years">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Year Span</div></div>
-    </div>
-    <!-- Page nav -->
+    <!-- Page nav — on its own line so it doesn't shift when stats load -->
     <div class="flex gap-1 mt-4">
       <a href="index.html"  class="px-4 py-1.5 rounded-full text-sm font-medium bg-white text-indigo-700 transition">Database</a>
       <a href="charts.html" class="px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 hover:bg-white/20 text-white transition">Charts &amp; Trends</a>
@@ -138,10 +140,6 @@
         <option value="">All Market Years</option>
       </select>
 
-      <select id="filter-year" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
-        <option value="">All Start Dates</option>
-      </select>
-
       <button id="btn-clear" class="ml-auto text-sm text-indigo-600 font-medium hover:text-indigo-800 transition px-3 py-2 rounded-lg hover:bg-indigo-50">
         ✕ Clear filters
       </button>
@@ -169,15 +167,19 @@
     <table class="w-full text-sm border-collapse">
       <thead>
         <tr class="bg-slate-50 text-slate-600 text-xs uppercase tracking-wide">
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 whitespace-nowrap" data-col="year">
+            Market Year
+            <span class="has-tip align-middle" style="font-weight:normal;font-size:13px;cursor:help;">ⓘ<span class="tip" style="font-weight:normal;white-space:normal;width:240px;left:0;transform:none;">Year = starting year of the hiring cycle. <strong>'2025'</strong> = the 2025–26 academic job market — positions starting ~fall 2026.</span></span>
+            <span class="sort-arrow"></span>
+          </th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tab">Tab <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[110px]" data-col="start_date">Start Date <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[180px]" data-col="institution">Institution <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[140px]" data-col="rank">Rank <span class="sort-arrow"></span></th>
-          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[120px] whitespace-nowrap" data-col="area">Area (Raw Text) <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[120px] whitespace-nowrap" data-col="area">Area <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[140px]" data-col="area_category">Category <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tt_ntt">TT/NTT <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[130px]" data-col="location">Location <span class="sort-arrow"></span></th>
-          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[110px]" data-col="start_date">Start Date <span class="sort-arrow"></span></th>
-          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 whitespace-nowrap" data-col="year" title="Market cycle year. '2025' = the 2025–26 academic hiring cycle (jobs posted ~spring 2026 for fall 2026 start).">Market Year ⓘ <span class="sort-arrow"></span></th>
-          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tab">Tab <span class="sort-arrow"></span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -258,13 +260,10 @@ fetch('data.json')
     document.getElementById('stat-years').textContent  = yrs.length > 1
       ? `${yrs[yrs.length-1]}–${yrs[0]}`
       : (yrs[0] || '?');
-    document.getElementById('header-stats').classList.remove('hidden');
-
     // Populate filter dropdowns
     populateSelect('filter-category', meta.area_categories);
     populateSelect('filter-tt',       meta.tt_ntt_vals);
     populateSelect('filter-region',   meta.regions_broad);
-    populateSelect('filter-year',     meta.start_date_groups);
     // Market year filter: value = "2025", label = "2025-26"
     meta.years.forEach(y => {
       const o = document.createElement('option');
@@ -309,10 +308,9 @@ document.getElementById('filter-category').addEventListener('change',onChange);
 document.getElementById('filter-tt').addEventListener('change',      onChange);
 document.getElementById('filter-region').addEventListener('change',       onChange);
 document.getElementById('filter-market-year').addEventListener('change',   onChange);
-document.getElementById('filter-year').addEventListener('change',          onChange);
 document.getElementById('btn-clear').addEventListener('click', () => {
   document.getElementById('search-input').value = '';
-  ['filter-tab','filter-category','filter-tt','filter-region','filter-market-year','filter-year'].forEach(id => {
+  ['filter-tab','filter-category','filter-tt','filter-region','filter-market-year'].forEach(id => {
     document.getElementById(id).value = '';
   });
   currentPage = 1; applyFilters();
@@ -325,7 +323,6 @@ function applyFilters() {
   const tt        = document.getElementById('filter-tt').value;
   const region    = document.getElementById('filter-region').value;
   const mktYear   = document.getElementById('filter-market-year').value;
-  const year      = document.getElementById('filter-year').value;
 
   filtered = ALL_JOBS.filter(j => {
     if (tab     && j.tab              !== tab)     return false;
@@ -333,7 +330,6 @@ function applyFilters() {
     if (tt      && j.tt_ntt           !== tt)      return false;
     if (region  && j.region_broad     !== region)  return false;
     if (mktYear && j.year             !== mktYear) return false;
-    if (year    && j.start_date_group !== year)    return false;
     if (q) {
       const haystack = [j.institution, j.area, j.rank, j.location, j.notes, j.area_category, j.start_date]
         .map(v => (v || '').toLowerCase()).join(' ');
@@ -436,15 +432,15 @@ function renderTable() {
       : '';
 
     return `<tr class="${bg} border-b border-slate-100 text-sm align-top">
+      <td class="px-4 py-2.5">${yearCell}</td>
+      <td class="px-4 py-2.5">${tabCell}</td>
+      <td class="px-4 py-2.5">${startDateCell}</td>
       <td class="px-4 py-2.5">${instCell}${notesTip}</td>
       <td class="px-4 py-2.5">${rankCell}</td>
       <td class="px-4 py-2.5">${areaCell}</td>
       <td class="px-4 py-2.5">${catCell}</td>
       <td class="px-4 py-2.5">${ttCell}</td>
       <td class="px-4 py-2.5">${locCell}</td>
-      <td class="px-4 py-2.5">${startDateCell}</td>
-      <td class="px-4 py-2.5">${yearCell}</td>
-      <td class="px-4 py-2.5">${tabCell}</td>
     </tr>`;
   }).join('');
 }

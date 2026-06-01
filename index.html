@@ -180,6 +180,7 @@
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[140px]" data-col="area_category">Category <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tt_ntt">TT/NTT <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[130px]" data-col="location">Location <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[130px]" data-col="region_broad">Region <span class="sort-arrow"></span></th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -405,6 +406,9 @@ function renderTable() {
       ? `<span class="badge ${ttCls}">${esc(j.tt_ntt)}</span>`
       : `<span class="text-slate-300">—</span>`;
 
+    const regionCell = j.region_broad
+      ? `<span class="text-slate-600 text-xs">${esc(j.region_broad)}</span>`
+      : '';
     const locCell = j.location
       ? `<span class="text-slate-600 text-xs">${esc(shortStr(j.location, 30))}</span>`
       : `<span class="text-slate-300">—</span>`;
@@ -442,6 +446,7 @@ function renderTable() {
       <td class="px-4 py-2.5">${catCell}</td>
       <td class="px-4 py-2.5">${ttCell}</td>
       <td class="px-4 py-2.5">${locCell}</td>
+      <td class="px-4 py-2.5">${regionCell}</td>
     </tr>`;
   }).join('');
 }

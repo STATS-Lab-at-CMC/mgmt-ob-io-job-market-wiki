@@ -204,10 +204,11 @@ df["tt_ntt"]        = df["tt_ntt"].apply(norm_tt) if "tt_ntt" in df.columns else
 df["start_date"]    = df["start_date"].apply(clean_start_date) if "start_date" in df.columns else None
 df["start_date_group"] = df["start_date"].apply(group_start_date)
 
-# Year per sheet (for meta/stats only — not exposed in table)
+# Year per sheet (each spreadsheet = one market cycle) → 100% coverage
 year_map = {}
 for sid, grp in df.groupby("_sheet_id"):
     year_map[sid] = infer_year(grp.get("post_date", pd.Series([]))) or "?"
+df["year"] = df["_sheet_id"].map(year_map)
 
 # Drop rows where all identity fields are blank
 key_fields = [c for c in ["institution", "area", "job_rank"] if c in df.columns]

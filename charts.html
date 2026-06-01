@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Charts & Trends — Management Job Market</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { font-family: 'Inter', sans-serif; }
+  body { background: #f8fafc; }
+  select {
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 32px !important;
+  }
+  .spinner { width:36px;height:36px;border:3px solid #e2e8f0;border-top-color:#6366f1;border-radius:50%;animation:spin .7s linear infinite; }
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .chart-card { background:white;border-radius:12px;border:1px solid #e2e8f0;padding:24px;box-shadow:0 1px 3px rgba(0,0,0,.06); }
+  .chart-card h2 { font-size:15px;font-weight:600;color:#1e293b;margin-bottom:4px; }
+  .chart-card p  { font-size:12px;color:#94a3b8;margin-bottom:16px; }
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════════ -->
+<header class="bg-gradient-to-r from-indigo-700 to-violet-700 text-white shadow-lg">
+  <div class="max-w-screen-2xl mx-auto px-6 py-5">
+    <div class="flex flex-wrap gap-4 items-start justify-between">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight">🎓 Management Job Market Searchable Database</h1>
+        <p class="text-indigo-200 text-sm mt-0.5">Aggregated from community-maintained Google Sheets · non-official · use at your own risk</p>
+      </div>
+      <div id="header-stats" class="flex gap-6 text-center hidden">
+        <div><div class="text-2xl font-bold" id="stat-total">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Listings</div></div>
+        <div><div class="text-2xl font-bold" id="stat-sheets">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Source Sheets</div></div>
+        <div><div class="text-2xl font-bold" id="stat-years">—</div><div class="text-indigo-200 text-xs uppercase tracking-wide">Year Span</div></div>
+      </div>
+    </div>
+    <!-- Page nav -->
+    <div class="flex gap-1 mt-4">
+      <a href="index.html"  class="px-4 py-1.5 rounded-full text-sm font-medium bg-white/10 hover:bg-white/20 text-white transition">Database</a>
+      <a href="charts.html" class="px-4 py-1.5 rounded-full text-sm font-medium bg-white text-indigo-700 transition">Charts &amp; Trends</a>
+    </div>
+  </div>
+</header>
+
+<!-- ═══ FILTER BAR ══════════════════════════════════════════════════════════ -->
+<div class="sticky top-0 z-20 bg-white border-b border-slate-200 shadow-sm">
+  <div class="max-w-screen-2xl mx-auto px-6 py-3 flex flex-wrap gap-2 items-center">
+    <select id="f-tab" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+      <option value="">All Tabs</option>
+      <option value="Micro Jobs">Micro Jobs</option>
+      <option value="Macro Jobs">Macro Jobs</option>
+    </select>
+    <select id="f-cat" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+      <option value="">All Areas</option>
+    </select>
+    <select id="f-tt" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+      <option value="">All TT/NTT</option>
+    </select>
+    <select id="f-region" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+      <option value="">All Regions</option>
+    </select>
+    <button id="btn-clear" class="ml-2 text-sm text-indigo-600 font-medium hover:text-indigo-800 px-3 py-2 rounded-lg hover:bg-indigo-50 transition">✕ Clear</button>
+    <span id="filter-count" class="ml-auto text-sm text-slate-400 font-medium"></span>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ════════════════════════════════════════════════════════ -->
+<div class="max-w-screen-2xl mx-auto px-6 py-6">
+
+  <!-- Loading -->
+  <div id="loading" class="flex flex-col items-center justify-center py-24 gap-4">
+    <div class="spinner"></div>
+    <div class="text-slate-400 text-sm">Loading job data…</div>
+  </div>
+
+  <div id="charts-wrap" class="hidden space-y-6">
+
+    <!-- ── Row 1: Total over time (full width) ──────────────────────────── -->
+    <div class="chart-card">
+      <h2>Total Listings by Market Year</h2>
+      <p>Each bar represents one annual job market wiki sheet</p>
+      <div class="h-64"><canvas id="chart-total"></canvas></div>
+    </div>
+
+    <!-- ── Row 2: Area breakdown + TT/NTT ──────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="chart-card">
+        <h2>Listings by Area Category Over Time</h2>
+        <p>Stacked by categorized research area</p>
+        <div class="h-72"><canvas id="chart-area"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h2>TT vs NTT Over Time</h2>
+        <p>Among listings with TT/NTT information (74% of total)</p>
+        <div class="h-72"><canvas id="chart-tt"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Row 3: Tab split + Top subfields ────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div class="chart-card">
+        <h2>Micro vs Macro Jobs Over Time</h2>
+        <p>Business-school (Macro) vs. other discipline (Micro) listings</p>
+        <div class="h-72"><canvas id="chart-tab"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h2>Top 12 Raw Subfields</h2>
+        <p>By listing count (filtered)</p>
+        <div class="h-72"><canvas id="chart-top-areas"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ── Row 4: Regional breakdown (full width) ───────────────────────── -->
+    <div class="chart-card">
+      <h2>Listings by Region Over Time</h2>
+      <p>Among listings with regional data</p>
+      <div class="h-72"><canvas id="chart-region"></canvas></div>
+    </div>
+
+  </div>
+</div>
+
+<p class="text-center text-xs text-slate-400 mt-4 mb-8">
+  Data sourced from community-maintained Google Sheets. Not affiliated with any official organization.
+  Built by <a href="https://github.com/STATS-Lab-at-CMC/mgmt-ob-io-job-market-wiki" class="text-indigo-500 hover:underline">STATS Lab at CMC</a>.
+</p>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// COLORS
+// ═══════════════════════════════════════════════════════════════════════════
+const CAT_COLORS = {
+  "IO Psychology":               '#10b981',
+  "OB / HR":                     '#6366f1',
+  "Organizational Behavior":     '#3b82f6',
+  "HR / HRM":                    '#06b6d4',
+  "Leadership":                  '#8b5cf6',
+  "Strategy":                    '#f59e0b',
+  "Strategy / Entrepreneurship": '#f97316',
+  "Entrepreneurship":            '#ef4444',
+  "Management (General)":        '#64748b',
+  "International Business":      '#14b8a6',
+  "Finance / Accounting":        '#84cc16',
+  "Marketing":                   '#ec4899',
+  "Operations / SCM":            '#eab308',
+  "Other / Unspecified":         '#cbd5e1',
+};
+const TT_COLORS = {
+  "TT":         '#22c55e',
+  "NTT":        '#f43f5e',
+  "Visiting":   '#38bdf8',
+  "Fixed Term": '#fb923c',
+  "Postdoc":    '#a78bfa',
+  "TT or NTT":  '#94a3b8',
+};
+const TAB_COLORS = {
+  "Micro Jobs": '#14b8a6',
+  "Macro Jobs": '#8b5cf6',
+};
+const REGION_COLORS = [
+  '#6366f1','#10b981','#f59e0b','#ef4444','#06b6d4',
+  '#8b5cf6','#f97316','#ec4899','#84cc16',
+];
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let ALL_JOBS = [];
+let FILTERED  = [];
+let VALID_YEARS = [];
+const charts  = {};
+
+const CHART_OPTIONS_BASE = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } } },
+  scales: {
+    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    y: { beginAtZero: true, ticks: { font: { size: 11 } } },
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LOAD DATA
+// ═══════════════════════════════════════════════════════════════════════════
+fetch('data.json')
+  .then(r => r.json())
+  .then(({ meta, jobs }) => {
+    ALL_JOBS = jobs;
+
+    document.getElementById('stat-total').textContent  = meta.total.toLocaleString();
+    document.getElementById('stat-sheets').textContent = meta.sheets;
+    const yrs = meta.years;
+    document.getElementById('stat-years').textContent  = yrs.length > 1
+      ? `${yrs[yrs.length-1]}–${yrs[0]}` : (yrs[0] || '?');
+    document.getElementById('header-stats').classList.remove('hidden');
+
+    VALID_YEARS = [...new Set(jobs.map(j => j.year).filter(y => y && y !== '?'))].sort();
+
+    populateSelect('f-cat',    meta.area_categories);
+    populateSelect('f-tt',     meta.tt_ntt_vals);
+    populateSelect('f-region', meta.regions_broad);
+
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('charts-wrap').classList.remove('hidden');
+
+    applyFilters();
+  });
+
+function populateSelect(id, values) {
+  const sel = document.getElementById(id);
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = o.textContent = v;
+    sel.appendChild(o);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTER
+// ═══════════════════════════════════════════════════════════════════════════
+['f-tab','f-cat','f-tt','f-region'].forEach(id =>
+  document.getElementById(id).addEventListener('change', applyFilters)
+);
+document.getElementById('btn-clear').addEventListener('click', () => {
+  ['f-tab','f-cat','f-tt','f-region'].forEach(id => document.getElementById(id).value = '');
+  applyFilters();
+});
+
+function applyFilters() {
+  const tab = document.getElementById('f-tab').value;
+  const cat = document.getElementById('f-cat').value;
+  const tt  = document.getElementById('f-tt').value;
+  const reg = document.getElementById('f-region').value;
+  FILTERED = ALL_JOBS.filter(j =>
+    (!tab || j.tab === tab) &&
+    (!cat || j.area_category === cat) &&
+    (!tt  || j.tt_ntt === tt) &&
+    (!reg || j.region_broad === reg)
+  );
+  document.getElementById('filter-count').textContent =
+    FILTERED.length === ALL_JOBS.length
+      ? `${ALL_JOBS.length.toLocaleString()} listings`
+      : `${FILTERED.length.toLocaleString()} of ${ALL_JOBS.length.toLocaleString()} listings`;
+  updateAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════════
+function byYear(jobs) {
+  const m = Object.fromEntries(VALID_YEARS.map(y => [y, 0]));
+  jobs.forEach(j => { if (j.year && m[j.year] !== undefined) m[j.year]++; });
+  return VALID_YEARS.map(y => m[y]);
+}
+
+function pivotByYear(jobs, groupKey, colorMap, topN = null) {
+  // Count occurrences per group×year
+  const totals = {}, counts = {};
+  jobs.forEach(j => {
+    const g = j[groupKey];
+    const y = j.year;
+    if (!g || !y || y === '?') return;
+    totals[g] = (totals[g] || 0) + 1;
+    if (!counts[g]) counts[g] = Object.fromEntries(VALID_YEARS.map(y => [y, 0]));
+    if (counts[g][y] !== undefined) counts[g][y]++;
+  });
+  let groups = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
+  if (topN) groups = groups.slice(0, topN);
+  return groups.map((g, i) => ({
+    label: g,
+    data: VALID_YEARS.map(y => counts[g][y] || 0),
+    backgroundColor: colorMap?.[g] || REGION_COLORS[i % REGION_COLORS.length],
+    stack: 'main',
+  }));
+}
+
+function makeOrUpdate(id, type, labels, datasets, extraOpts = {}) {
+  const canvas = document.getElementById(id);
+  if (charts[id]) {
+    charts[id].data.labels   = labels;
+    charts[id].data.datasets = datasets;
+    charts[id].update('active');
+  } else {
+    charts[id] = new Chart(canvas, {
+      type,
+      data: { labels, datasets },
+      options: deepMerge(CHART_OPTIONS_BASE, extraOpts),
+    });
+  }
+}
+
+function deepMerge(base, override) {
+  const out = JSON.parse(JSON.stringify(base));
+  function merge(dst, src) {
+    for (const k of Object.keys(src || {})) {
+      if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k])) {
+        dst[k] = dst[k] || {};
+        merge(dst[k], src[k]);
+      } else {
+        dst[k] = src[k];
+      }
+    }
+  }
+  merge(out, override);
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════════════════════
+function updateAll() {
+  updateTotal();
+  updateArea();
+  updateTT();
+  updateTab();
+  updateTopAreas();
+  updateRegion();
+}
+
+// 1. Total per year
+function updateTotal() {
+  makeOrUpdate('chart-total', 'bar', VALID_YEARS,
+    [{ label: 'Listings', data: byYear(FILTERED),
+       backgroundColor: '#6366f1', borderRadius: 5 }],
+    { plugins: { legend: { display: false } } }
+  );
+}
+
+// 2. Area category stacked bar
+function updateArea() {
+  makeOrUpdate('chart-area', 'bar', VALID_YEARS,
+    pivotByYear(FILTERED, 'area_category', CAT_COLORS),
+    { scales: { x: { stacked: true, grid: { display: false } },
+                y: { stacked: true } } }
+  );
+}
+
+// 3. TT/NTT stacked bar (only jobs with TT data)
+function updateTT() {
+  const withTT = FILTERED.filter(j => j.tt_ntt);
+  makeOrUpdate('chart-tt', 'bar', VALID_YEARS,
+    pivotByYear(withTT, 'tt_ntt', TT_COLORS),
+    { scales: { x: { stacked: true, grid: { display: false } },
+                y: { stacked: true } } }
+  );
+}
+
+// 4. Micro vs Macro stacked bar
+function updateTab() {
+  makeOrUpdate('chart-tab', 'bar', VALID_YEARS,
+    pivotByYear(FILTERED, 'tab', TAB_COLORS),
+    { scales: { x: { stacked: true, grid: { display: false } },
+                y: { stacked: true } } }
+  );
+}
+
+// 5. Top raw subfields (horizontal bar, static snapshot of FILTERED)
+function updateTopAreas() {
+  const counts = {};
+  FILTERED.forEach(j => {
+    const a = j.area;
+    if (a) counts[a] = (counts[a] || 0) + 1;
+  });
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const labels = sorted.map(([k]) => k.length > 30 ? k.slice(0,28)+'…' : k);
+  const data   = sorted.map(([, v]) => v);
+
+  const colors = sorted.map(([k]) => {
+    const cat = (FILTERED.find(j => j.area === k) || {}).area_category;
+    return CAT_COLORS[cat] || '#94a3b8';
+  });
+
+  makeOrUpdate('chart-top-areas', 'bar', labels,
+    [{ label: 'Listings', data, backgroundColor: colors, borderRadius: 4 }],
+    {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#f1f5f9' } },
+        y: { grid: { display: false }, ticks: { font: { size: 10 } } },
+      },
+    }
+  );
+}
+
+// 6. Region stacked bar
+function updateRegion() {
+  const withRegion = FILTERED.filter(j => j.region_broad);
+  makeOrUpdate('chart-region', 'bar', VALID_YEARS,
+    pivotByYear(withRegion, 'region_broad', null),
+    { scales: { x: { stacked: true, grid: { display: false } },
+                y: { stacked: true } } }
+  );
+}
+</script>
+</body>
+</html>

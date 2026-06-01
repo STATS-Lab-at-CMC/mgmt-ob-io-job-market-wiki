@@ -107,11 +107,11 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div class="chart-card">
         <h2>Micro vs Macro Jobs Over Time</h2>
-        <p>Business-school (Macro) vs. other discipline (Micro) listings</p>
+        <p>Macro-oriented fields vs. micro-oriented fields</p>
         <div class="h-72"><canvas id="chart-tab"></canvas></div>
       </div>
       <div class="chart-card">
-        <h2>Top 12 Raw Subfields</h2>
+        <h2>Top 10 Subfields</h2>
         <p>By listing count (filtered)</p>
         <div class="h-72"><canvas id="chart-top-areas"></canvas></div>
       </div>
@@ -263,7 +263,7 @@ function byYear(jobs) {
   return VALID_YEARS.map(y => m[y]);
 }
 
-function pivotByYear(jobs, groupKey, colorMap, topN = null) {
+function pivotByYear(jobs, groupKey, colorMap, topN = null, stacked = true) {
   // Count occurrences per group×year
   const totals = {}, counts = {};
   jobs.forEach(j => {
@@ -276,12 +276,16 @@ function pivotByYear(jobs, groupKey, colorMap, topN = null) {
   });
   let groups = Object.keys(totals).sort((a, b) => totals[b] - totals[a]);
   if (topN) groups = groups.slice(0, topN);
-  return groups.map((g, i) => ({
-    label: g,
-    data: VALID_YEARS.map(y => counts[g][y] || 0),
-    backgroundColor: colorMap?.[g] || REGION_COLORS[i % REGION_COLORS.length],
-    stack: 'main',
-  }));
+  return groups.map((g, i) => {
+    const ds = {
+      label: g,
+      data: VALID_YEARS.map(y => counts[g][y] || 0),
+      backgroundColor: colorMap?.[g] || REGION_COLORS[i % REGION_COLORS.length],
+      borderRadius: 3,
+    };
+    if (stacked) ds.stack = 'main';
+    return ds;
+  });
 }
 
 function makeOrUpdate(id, type, labels, datasets, extraOpts = {}) {
@@ -358,7 +362,7 @@ function updateTT() {
 // 4. Micro vs Macro grouped bar (side-by-side)
 function updateTab() {
   makeOrUpdate('chart-tab', 'bar', YEAR_LABELS,
-    pivotByYear(FILTERED, 'tab', TAB_COLORS),
+    pivotByYear(FILTERED, 'tab', TAB_COLORS, null, false),
     { scales: { x: { stacked: false, grid: { display: false } },
                 y: { stacked: false } } }
   );
@@ -366,19 +370,25 @@ function updateTab() {
 
 // Normalize raw subfield labels by combining known aliases
 const SUBFIELD_ALIASES = {
-  'ob':                   'OB / HR',
-  'ob/hr':                'OB / HR',
-  'obhr':                 'OB / HR',
-  'hr':                   'OB / HR',
-  'hrm':                  'OB / HR',
-  'ob / hr':              'OB / HR',
-  'mgmt':                 'Management',
-  'management':           'Management',
-  'ent':                  'Entrepreneurship',
-  'entrepreneurship':     'Entrepreneurship',
-  'str':                  'Strategy',
-  'strategy':             'Strategy',
-  'strategic management': 'Strategy',
+  'ob':                        'OB / HR',
+  'ob/hr':                     'OB / HR',
+  'obhr':                      'OB / HR',
+  'hr':                        'OB / HR',
+  'hrm':                       'OB / HR',
+  'ob / hr':                   'OB / HR',
+  'hr/ob':                     'OB / HR',
+  'ob, hr':                    'OB / HR',
+  'mgmt':                      'Management',
+  'management':                'Management',
+  'ent':                       'Entrepreneurship',
+  'entrepreneurship':          'Entrepreneurship',
+  'str':                       'Strategy',
+  'strategy':                  'Strategy',
+  'strategic management':      'Strategy',
+  'str/ent':                   'Strategy/Entrepreneurship',
+  'strategy/entrepreneurship': 'Strategy/Entrepreneurship',
+  'ib':                        'International Business',
+  'international business':    'International Business',
 };
 function normalizeSubfield(raw) {
   if (!raw) return null;
@@ -397,7 +407,7 @@ function updateTopAreas() {
       if (!catMap[a]) catMap[a] = j.area_category;
     }
   });
-  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 10);
   const labels = sorted.map(([k]) => k.length > 30 ? k.slice(0,28)+'…' : k);
   const data   = sorted.map(([, v]) => v);
 

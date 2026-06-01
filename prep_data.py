@@ -186,6 +186,48 @@ col_list = ", ".join('"' + c + '"' for c in available)
 df = pd.read_sql(f'SELECT {col_list} FROM jobs', con)
 con.close()
 
+# ── Drop stray header rows ────────────────────────────────────────────────────
+# Some sheets were manually sorted, leaving the header row mixed into the data.
+# Those rows have cell VALUES that match column label names (e.g. "School", "Rank").
+# We detect them by exact match against a set of known column-label strings.
+_HEADER_CELL_VALS = frozenset([
+    'school', 'university', 'institution', 'school or company',
+    'rank', 'job rank', 'type / position', 'type',
+    'area', 'job focus area', 'subfield', 'focus area',
+    'location', 'region', 'notes', 'notes/comments',
+    'deadline', 'due date', 'salary', 'link', 'url',
+    'tt/ntt', 'tt-ntt', 'tenure track', 'tenure-track',
+    'start date', 'date', 'post date', 'posted', 'date posted',
+    'contact', 'status', 'position status',
+    'do not sort', 'please do not sort', 'reminder',
+])
+
+def _is_stray_header(row):
+    vals = {str(v).strip().lower() for v in row.values if pd.notna(v) and str(v).strip()}
+    return len(vals & _HEADER_CELL_VALS) >= 3
+
+# Also read all columns for wider detection
+con2 = sqlite3.connect(os.path.join(script_dir, DB))
+df_wide = pd.read_sql('SELECT * FROM jobs', con2)
+con2.close()
+
+# 3+ hits across all columns (original rule)
+stray_all = df_wide.apply(_is_stray_header, axis=1)
+
+# 2+ hits but only in the key semantic columns — avoids false positives from notes/urls
+_KEY_COLS = ['institution', 'job_rank', 'area', 'location', 'region', 'tt_ntt']
+_key_available = [c for c in _KEY_COLS if c in df_wide.columns]
+def _is_header_in_key_cols(row):
+    vals = {str(row[c]).strip().lower() for c in _key_available if pd.notna(row[c]) and str(row[c]).strip()}
+    return len(vals & _HEADER_CELL_VALS) >= 2
+stray_key = df_wide.apply(_is_header_in_key_cols, axis=1)
+
+drop_mask = stray_all | stray_key
+n_drop = drop_mask.sum()
+if n_drop:
+    print(f"  Removing {n_drop} stray header rows mixed into data")
+    df = df[~drop_mask.values]
+
 # ── Coalesce TT/NTT from all raw column variants ──────────────────────────────
 TT_RAW_COLS = ["tt_ntt", "tt-ntt-postdoc", "tenure track", "tenure-track", "type / position"]
 existing_tt = [c for c in TT_RAW_COLS if c in df.columns]

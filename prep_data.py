@@ -89,13 +89,17 @@ def categorize_area(raw):
 # ── Broad region ──────────────────────────────────────────────────────────────
 US_SIGNALS = ["us ", "u.s", "usa", "united states", "northeast", "midwest",
               "southeast", "southwest", "northwest", "mid-atlantic", "midatlantic",
-              "pacific", "west coast", "east coast", "appalachia", "hawaii",
-              "alaska", "texas", "boston", "baltimore", " ca", "new york",
-              "chicago", "midsouth", "mid-south", "north central"]
+              "pacific northwest", "pacific coast", "west coast", "east coast",
+              "appalachia", "hawaii", "alaska", "texas", "boston", "baltimore",
+              " ca", "new york", "chicago", "midsouth", "mid-south", "north central"]
 def broad_region(raw):
     if not raw or str(raw).strip().lower() in ("nan", "none", ""):
         return None
     rl = str(raw).strip().lower()
+    # Check Asia first to prevent "Asia Pacific" matching "pacific" in US_SIGNALS
+    if any(x in rl for x in ["asia", "china", "korea", "japan", "singapore", "india",
+                               "taiwan", "vietnam", "hong kong"]):
+        return "Asia"
     if any(x in rl for x in US_SIGNALS) or rl in ("us", "usa", "us east", "us west", "west",
         "south", "north", "east", "midwest", "northeast", "southeast", "southwest",
         "northwest", "mid-atlantic"):
@@ -105,9 +109,6 @@ def broad_region(raw):
     if any(x in rl for x in ["europe", " eu", "uk", "france", "netherlands", "spain",
                                "switzerland", "amsterdam", "nl", "paris"]):
         return "Europe"
-    if any(x in rl for x in ["asia", "china", "korea", "japan", "singapore", "india",
-                               "taiwan", "vietnam", "hong kong"]):
-        return "Asia"
     if any(x in rl for x in ["australia", "aus", "new zealand", "nz", "oceania", "melbourne"]):
         return "Australia / NZ"
     if any(x in rl for x in ["middle east", "mideast", "uae", "oil money", "kuwait", "saudi"]):
@@ -241,7 +242,14 @@ df = df.drop(columns=[c for c in TT_RAW_COLS[1:] if c in df.columns], errors='ig
 
 # ── Apply transforms ──────────────────────────────────────────────────────────
 df["area_category"] = df["area"].apply(categorize_area) if "area" in df.columns else "Other / Unspecified"
-df["region_broad"]  = df["region"].apply(broad_region) if "region" in df.columns else None
+def broad_region_row(row):
+    """Try region column first, fall back to location if region is empty."""
+    result = broad_region(row.get("region"))
+    if result is None:
+        result = broad_region(row.get("location"))
+    return result
+
+df["region_broad"] = df.apply(broad_region_row, axis=1)
 df["tt_ntt"]        = df["tt_ntt"].apply(norm_tt) if "tt_ntt" in df.columns else None
 df["start_date"]    = df["start_date"].apply(clean_start_date) if "start_date" in df.columns else None
 df["start_date_group"] = df["start_date"].apply(group_start_date)

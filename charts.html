@@ -354,30 +354,53 @@ function updateTT() {
   );
 }
 
-// 4. Micro vs Macro stacked bar
+// 4. Micro vs Macro grouped bar (side-by-side)
 function updateTab() {
   makeOrUpdate('chart-tab', 'bar', YEAR_LABELS,
     pivotByYear(FILTERED, 'tab', TAB_COLORS),
-    { scales: { x: { stacked: true, grid: { display: false } },
-                y: { stacked: true } } }
+    { scales: { x: { stacked: false, grid: { display: false } },
+                y: { stacked: false } } }
   );
+}
+
+// Normalize raw subfield labels by combining known aliases
+const SUBFIELD_ALIASES = {
+  'ob':                   'OB / HR',
+  'ob/hr':                'OB / HR',
+  'obhr':                 'OB / HR',
+  'hr':                   'OB / HR',
+  'hrm':                  'OB / HR',
+  'ob / hr':              'OB / HR',
+  'mgmt':                 'Management',
+  'management':           'Management',
+  'ent':                  'Entrepreneurship',
+  'entrepreneurship':     'Entrepreneurship',
+  'str':                  'Strategy',
+  'strategy':             'Strategy',
+  'strategic management': 'Strategy',
+};
+function normalizeSubfield(raw) {
+  if (!raw) return null;
+  const key = raw.trim().toLowerCase();
+  return SUBFIELD_ALIASES[key] || raw.trim();
 }
 
 // 5. Top raw subfields (horizontal bar, static snapshot of FILTERED)
 function updateTopAreas() {
   const counts = {};
+  const catMap  = {};
   FILTERED.forEach(j => {
-    const a = j.area;
-    if (a) counts[a] = (counts[a] || 0) + 1;
+    const a = normalizeSubfield(j.area);
+    if (a) {
+      counts[a] = (counts[a] || 0) + 1;
+      if (!catMap[a]) catMap[a] = j.area_category;
+    }
   });
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 12);
   const labels = sorted.map(([k]) => k.length > 30 ? k.slice(0,28)+'…' : k);
   const data   = sorted.map(([, v]) => v);
 
-  const colors = sorted.map(([k]) => {
-    const cat = (FILTERED.find(j => j.area === k) || {}).area_category;
-    return CAT_COLORS[cat] || '#94a3b8';
-  });
+  const colors = sorted.map(([k]) => CAT_COLORS[catMap[k]] || '#94a3b8');
 
   makeOrUpdate('chart-top-areas', 'bar', labels,
     [{ label: 'Listings', data, backgroundColor: colors, borderRadius: 4 }],

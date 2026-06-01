@@ -134,6 +134,10 @@
         <option value="">All Regions</option>
       </select>
 
+      <select id="filter-market-year" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
+        <option value="">All Market Years</option>
+      </select>
+
       <select id="filter-year" class="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer">
         <option value="">All Start Dates</option>
       </select>
@@ -172,6 +176,7 @@
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tt_ntt">TT/NTT <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[130px]" data-col="location">Location <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 min-w-[110px]" data-col="start_date">Start Date <span class="sort-arrow"></span></th>
+          <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200 whitespace-nowrap" data-col="year" title="Market cycle year. '2025' = the 2025–26 academic hiring cycle (jobs posted ~spring 2026 for fall 2026 start).">Market Year ⓘ <span class="sort-arrow"></span></th>
           <th class="sortable px-4 py-3 text-left font-semibold border-b border-slate-200" data-col="tab">Tab <span class="sort-arrow"></span></th>
         </tr>
       </thead>
@@ -260,6 +265,13 @@ fetch('data.json')
     populateSelect('filter-tt',       meta.tt_ntt_vals);
     populateSelect('filter-region',   meta.regions_broad);
     populateSelect('filter-year',     meta.start_date_groups);
+    // Market year filter: value = "2025", label = "2025-26"
+    meta.years.forEach(y => {
+      const o = document.createElement('option');
+      o.value = y;
+      o.textContent = `${y}-${(parseInt(y)+1).toString().slice(-2)}`;
+      document.getElementById('filter-market-year').appendChild(o);
+    });
 
     // Show table
     document.getElementById('loading').classList.add('hidden');
@@ -295,11 +307,12 @@ document.getElementById('search-input').addEventListener('input',    onChange);
 document.getElementById('filter-tab').addEventListener('change',     onChange);
 document.getElementById('filter-category').addEventListener('change',onChange);
 document.getElementById('filter-tt').addEventListener('change',      onChange);
-document.getElementById('filter-region').addEventListener('change',  onChange);
-document.getElementById('filter-year').addEventListener('change',    onChange);
+document.getElementById('filter-region').addEventListener('change',       onChange);
+document.getElementById('filter-market-year').addEventListener('change',   onChange);
+document.getElementById('filter-year').addEventListener('change',          onChange);
 document.getElementById('btn-clear').addEventListener('click', () => {
   document.getElementById('search-input').value = '';
-  ['filter-tab','filter-category','filter-tt','filter-region','filter-year'].forEach(id => {
+  ['filter-tab','filter-category','filter-tt','filter-region','filter-market-year','filter-year'].forEach(id => {
     document.getElementById(id).value = '';
   });
   currentPage = 1; applyFilters();
@@ -311,14 +324,16 @@ function applyFilters() {
   const cat       = document.getElementById('filter-category').value;
   const tt        = document.getElementById('filter-tt').value;
   const region    = document.getElementById('filter-region').value;
+  const mktYear   = document.getElementById('filter-market-year').value;
   const year      = document.getElementById('filter-year').value;
 
   filtered = ALL_JOBS.filter(j => {
-    if (tab    && j.tab           !== tab)    return false;
-    if (cat    && j.area_category !== cat)    return false;
-    if (tt     && j.tt_ntt        !== tt)     return false;
-    if (region && j.region_broad  !== region) return false;
-    if (year   && j.start_date_group !== year) return false;
+    if (tab     && j.tab              !== tab)     return false;
+    if (cat     && j.area_category    !== cat)     return false;
+    if (tt      && j.tt_ntt           !== tt)      return false;
+    if (region  && j.region_broad     !== region)  return false;
+    if (mktYear && j.year             !== mktYear) return false;
+    if (year    && j.start_date_group !== year)    return false;
     if (q) {
       const haystack = [j.institution, j.area, j.rank, j.location, j.notes, j.area_category, j.start_date]
         .map(v => (v || '').toLowerCase()).join(' ');
@@ -401,6 +416,11 @@ function renderTable() {
       ? `<span class="text-slate-700 text-xs">${esc(shortStr(j.start_date, 22))}</span>`
       : `<span class="text-slate-300">—</span>`;
 
+    const acYear = j.year ? `${j.year}-${(parseInt(j.year)+1).toString().slice(-2)}` : null;
+    const yearCell = acYear
+      ? `<span class="text-slate-600 text-xs font-mono" title="Market cycle: ${acYear} academic year">${acYear}</span>`
+      : `<span class="text-slate-300">—</span>`;
+
     const tabCell = j.tab
       ? `<span class="badge ${tabCls}">${esc(j.tab.replace(' Jobs', ''))}</span>`
       : '';
@@ -423,6 +443,7 @@ function renderTable() {
       <td class="px-4 py-2.5">${ttCell}</td>
       <td class="px-4 py-2.5">${locCell}</td>
       <td class="px-4 py-2.5">${startDateCell}</td>
+      <td class="px-4 py-2.5">${yearCell}</td>
       <td class="px-4 py-2.5">${tabCell}</td>
     </tr>`;
   }).join('');

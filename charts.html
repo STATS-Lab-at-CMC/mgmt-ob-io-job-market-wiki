@@ -85,7 +85,7 @@
     <!-- ── Row 1: Total over time (full width) ──────────────────────────── -->
     <div class="chart-card">
       <h2>Total Listings by Market Year</h2>
-      <p>Each bar represents one annual job market wiki sheet</p>
+      <p>Each bar = one annual hiring cycle. <strong>Label = starting year</strong> — e.g. "2025" means the 2025–26 academic job market (jobs posted ~spring 2026).</p>
       <div class="h-64"><canvas id="chart-total"></canvas></div>
     </div>
 
@@ -175,6 +175,7 @@ const REGION_COLORS = [
 let ALL_JOBS = [];
 let FILTERED  = [];
 let VALID_YEARS = [];
+let YEAR_LABELS = [];
 const charts  = {};
 
 const CHART_OPTIONS_BASE = {
@@ -203,6 +204,8 @@ fetch('data.json')
     document.getElementById('header-stats').classList.remove('hidden');
 
     VALID_YEARS = [...new Set(jobs.map(j => j.year).filter(y => y && y !== '?'))].sort();
+    // Academic year labels for x-axis: "2025" → "2025-26"
+    YEAR_LABELS = VALID_YEARS.map(y => `${y}-${(parseInt(y)+1).toString().slice(-2)}`);
 
     populateSelect('f-cat',    meta.area_categories);
     populateSelect('f-tt',     meta.tt_ntt_vals);
@@ -327,7 +330,7 @@ function updateAll() {
 
 // 1. Total per year
 function updateTotal() {
-  makeOrUpdate('chart-total', 'bar', VALID_YEARS,
+  makeOrUpdate('chart-total', 'bar', YEAR_LABELS,
     [{ label: 'Listings', data: byYear(FILTERED),
        backgroundColor: '#6366f1', borderRadius: 5 }],
     { plugins: { legend: { display: false } } }
@@ -336,7 +339,7 @@ function updateTotal() {
 
 // 2. Area category stacked bar
 function updateArea() {
-  makeOrUpdate('chart-area', 'bar', VALID_YEARS,
+  makeOrUpdate('chart-area', 'bar', YEAR_LABELS,
     pivotByYear(FILTERED, 'area_category', CAT_COLORS),
     { scales: { x: { stacked: true, grid: { display: false } },
                 y: { stacked: true } } }
@@ -346,7 +349,7 @@ function updateArea() {
 // 3. TT/NTT stacked bar (only jobs with TT data)
 function updateTT() {
   const withTT = FILTERED.filter(j => j.tt_ntt);
-  makeOrUpdate('chart-tt', 'bar', VALID_YEARS,
+  makeOrUpdate('chart-tt', 'bar', YEAR_LABELS,
     pivotByYear(withTT, 'tt_ntt', TT_COLORS),
     { scales: { x: { stacked: true, grid: { display: false } },
                 y: { stacked: true } } }
@@ -355,7 +358,7 @@ function updateTT() {
 
 // 4. Micro vs Macro stacked bar
 function updateTab() {
-  makeOrUpdate('chart-tab', 'bar', VALID_YEARS,
+  makeOrUpdate('chart-tab', 'bar', YEAR_LABELS,
     pivotByYear(FILTERED, 'tab', TAB_COLORS),
     { scales: { x: { stacked: true, grid: { display: false } },
                 y: { stacked: true } } }
@@ -394,7 +397,7 @@ function updateTopAreas() {
 // 6. Region stacked bar
 function updateRegion() {
   const withRegion = FILTERED.filter(j => j.region_broad);
-  makeOrUpdate('chart-region', 'bar', VALID_YEARS,
+  makeOrUpdate('chart-region', 'bar', YEAR_LABELS,
     pivotByYear(withRegion, 'region_broad', null),
     { scales: { x: { stacked: true, grid: { display: false } },
                 y: { stacked: true } } }

@@ -204,10 +204,25 @@ df["tt_ntt"]        = df["tt_ntt"].apply(norm_tt) if "tt_ntt" in df.columns else
 df["start_date"]    = df["start_date"].apply(clean_start_date) if "start_date" in df.columns else None
 df["start_date_group"] = df["start_date"].apply(group_start_date)
 
-# Year per sheet (each spreadsheet = one market cycle) → 100% coverage
-year_map = {}
-for sid, grp in df.groupby("_sheet_id"):
-    year_map[sid] = infer_year(grp.get("post_date", pd.Series([]))) or "?"
+# Year per sheet — hardcoded from full-text date analysis of each sheet.
+# Each sheet = one academic hiring cycle; year = the starting calendar year,
+# so the 2025-26 market cycle is labeled "2025".
+SHEET_YEAR_MAP = {
+    '14NRJYdqDCN3GgjkbKri2dVjBAghGa3QoiYIl2Y1pLDk': '2025',  # 2025-26
+    '1x62jJptJB2IP-OiZTs68FUQUkVt9GK7G55nJNwy9F2Y': '2024',  # 2024-25
+    '110R1iX4Jv2ufdqKvpgrMV5HHwoySNw37Vtk5DLF1ULc': '2023',  # 2023-24
+    '1yfzDTxgndA-wkn8Tml5QNjgLAgfbutHLGjYM8bJOYo0': '2022',  # 2022-23
+    '1_6SrJpgkK_gO2WJVTUo8E1nd3j-008Z_YrLkXe9xLp4': '2021',  # 2021-22
+    '1TJA_SMhd7KBEC2wJsaGDvMEl2lMVFMN8H89ZvWWP_cc': '2020',  # 2020-21
+    '1Bm5SzMeUuUaJ0FVVViq5II26YDXpLuKN4YA_nrtaqxw': '2019',  # 2019-20
+    '16Q17xeFyEYoNQ1SWOqfqLuf0Nm-Tn9vR-3lYubqYVgM': '2018',  # 2018-19
+    '1UwmJC5PmhRHi5QJmsGZGpyLmloPXQwxIsJqTPDTJHOE': '2017',  # 2017-18
+    '1Zz6DhkzO2TFLZOnoFkT57TFVXwLhagGXE1A4AaxDwag': '2016',  # 2016-17
+    '1gyB2QWkPIcUjMiBkkrwvkOg1uyo0VBrD9BDugzgEyhw': '2015',  # 2015-16
+    '15bb_BdFhV3M4iDAdBX15h7HeMP3SajapOF7zJTOUXH8': None,    # year unclear
+    '1-bSfridgSMqpD5ymikjfO_buGudBOt4X0TvfZ4z996g': None,    # year unclear
+}
+year_map = SHEET_YEAR_MAP
 df["year"] = df["_sheet_id"].map(year_map)
 
 # Drop rows where all identity fields are blank
@@ -222,7 +237,7 @@ records = df.to_dict(orient="records")
 meta = {
     "total":           len(records),
     "sheets":          df["sheet_id"].nunique(),
-    "years":           sorted({v for v in year_map.values() if v != "?"}, reverse=True),
+    "years":           sorted({v for v in year_map.values() if v}, reverse=True),
     "generated":       pd.Timestamp.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
     "area_categories": sorted(df["area_category"].dropna().unique().tolist()),
     "regions_broad":   sorted([r for r in df["region_broad"].dropna().unique().tolist()]),

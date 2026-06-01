@@ -97,34 +97,156 @@ def categorize_area(raw):
     return "Other / Unspecified"
 
 # ── Broad region ──────────────────────────────────────────────────────────────
+US_STATE_ABBREVS = {
+    'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
+    'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
+    'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
+    'VA','WA','WV','WI','WY','DC',
+}
+US_STATE_NAMES = {
+    'alabama','alaska','arizona','arkansas','california','colorado','connecticut',
+    'delaware','florida','georgia','hawaii','idaho','illinois','indiana','iowa',
+    'kansas','kentucky','louisiana','maine','maryland','massachusetts','michigan',
+    'minnesota','mississippi','missouri','montana','nebraska','nevada',
+    'new hampshire','new jersey','new mexico','new york','north carolina',
+    'north dakota','ohio','oklahoma','oregon','pennsylvania','rhode island',
+    'south carolina','south dakota','tennessee','texas','utah','vermont',
+    'virginia','washington','west virginia','wisconsin','wyoming',
+    'district of columbia',
+}
+CA_PROV_ABBREVS = {'AB','BC','MB','NB','NL','NS','NT','NU','ON','PE','QC','SK','YT'}
+
 US_SIGNALS = ["us ", "u.s", "usa", "united states", "northeast", "midwest",
               "southeast", "southwest", "northwest", "mid-atlantic", "midatlantic",
               "pacific northwest", "pacific coast", "west coast", "east coast",
               "appalachia", "hawaii", "alaska", "texas", "boston", "baltimore",
               " ca", "new york", "chicago", "midsouth", "mid-south", "north central"]
+
+EUROPE_CITIES = [
+    "london", "paris", "amsterdam", "berlin", "munich", "frankfurt", "hamburg",
+    "vienna", "zurich", "geneva", "brussels", "stockholm", "oslo", "copenhagen",
+    "helsinki", "dublin", "lisbon", "madrid", "barcelona", "rome", "milan",
+    "turin", "bologna", "prague", "warsaw", "budapest", "rotterdam", "leiden",
+    "groningen", "tilburg", "maastricht", "leuven", "ghent", "antwerp",
+    "lyon", "toulouse", "bordeaux", "marseille", "strasbourg", "nice",
+    "reykjavik", "reykjavík", "edinburgh", "glasgow", "manchester", "birmingham",
+    "bristol", "cardiff", "leeds", "sheffield", "nottingham", "liverpool",
+    "limerick", "cork", "galway", "maynooth", "dusseldorf", "düsseldorf",
+    "cologne", "köln", "stuttgart", "nuremberg", "nürnberg", "hannover",
+    "bologna", "florence", "venice", "naples", "athens", "thessaloniki",
+    "bucharest", "sofia", "zagreb", "ljubljana", "bratislava", "vilnius",
+    "riga", "tallinn", "luxembourg", "valletta", "nicosia",
+]
+EUROPE_COUNTRIES = [
+    "uk", "france", "germany", "netherlands", "spain", "portugal", "italy",
+    "switzerland", "austria", "belgium", "sweden", "norway", "denmark",
+    "finland", "ireland", "poland", "czech", "hungary", "greece", "romania",
+    "bulgaria", "croatia", "slovakia", "slovenia", "estonia", "latvia",
+    "lithuania", "luxembourg", "malta", "cyprus", "iceland",
+    "scotland", "england", "wales", "pt", "dk", "se", "no", "fi", "ie",
+]
+ASIA_CITIES = [
+    "beijing", "shanghai", "guangzhou", "shenzhen", "chengdu", "wuhan",
+    "nanjing", "hangzhou", "tianjin", "xi'an", "qingdao", "suzhou",
+    "fudan", "tsinghua", "peking", "renmin", "xiamen",
+    "tokyo", "osaka", "kyoto", "seoul", "busan", "taipei", "bangkok",
+    "ho chi minh", "hanoi", "jakarta", "kuala lumpur", "dhaka",
+    "mumbai", "delhi", "bangalore", "hyderabad", "chennai", "kolkata", "pune",
+    "islamabad", "karachi", "lahore", "colombo", "kathmandu",
+    "macau", "macao", "hk", "kowloon",
+    "almaty", "yerevan", "baku", "tashkent",
+]
+MIDEAST_CITIES = [
+    "dubai", "abu dhabi", "doha", "riyadh", "jeddah", "muscat",
+    "amman", "beirut", "tel aviv", "jerusalem", "tehran", "ankara", "istanbul",
+    "cairo", "kuwait city", "manama", "ifrane",
+]
+LATAM_AFRICA_CITIES = [
+    "são paulo", "sao paulo", "rio de janeiro", "buenos aires", "santiago",
+    "bogota", "bogotá", "lima", "mexico city", "guadalajara", "monterrey",
+    "nairobi", "lagos", "accra", "johannesburg", "cape town", "casablanca",
+    "rabat", "tunis", "algiers", "addis ababa",
+]
+AUSTRALIA_NZ_CITIES = [
+    "sydney", "melbourne", "brisbane", "perth", "adelaide", "canberra",
+    "auckland", "wellington", "christchurch",
+]
+
 def broad_region(raw):
     if not raw or str(raw).strip().lower() in ("nan", "none", ""):
         return None
-    rl = str(raw).strip().lower()
-    # Check Asia first to prevent "Asia Pacific" matching "pacific" in US_SIGNALS
+    s  = str(raw).strip()
+    rl = s.lower()
+
+    # ── US state abbreviation pattern: "City, ST" or "City, ST " ──────────────
+    m = re.search(r',\s*([A-Z]{2})\s*$', s)
+    if m and m.group(1) in US_STATE_ABBREVS:
+        return "United States"
+    # Canadian province abbreviation
+    if m and m.group(1) in CA_PROV_ABBREVS:
+        return "Canada"
+
+    # ── Asia first (before US signals, to catch "Asia Pacific") ───────────────
     if any(x in rl for x in ["asia", "china", "korea", "japan", "singapore", "india",
                                "taiwan", "vietnam", "hong kong"]):
         return "Asia"
+    if any(x in rl for x in ASIA_CITIES):
+        return "Asia"
+
+    # ── US keyword signals ─────────────────────────────────────────────────────
     if any(x in rl for x in US_SIGNALS) or rl in ("us", "usa", "us east", "us west", "west",
         "south", "north", "east", "midwest", "northeast", "southeast", "southwest",
         "northwest", "mid-atlantic"):
         return "United States"
-    if "canada" in rl or "quebec" in rl:
+    # US full state names (e.g. "Winter Park, Florida")
+    if any(name in rl for name in US_STATE_NAMES):
+        return "United States"
+    # US city/campus names without state abbreviation
+    if any(x in rl for x in ["urbana-champaign", "urbana champaign", "penn state",
+                               "st paul", "saint paul", "minneapolis"]):
+        return "United States"
+    # "Baton Rouge LA" style (no comma)
+    m3 = re.search(r'\b([A-Z]{2})\s*$', s)
+    if m3 and m3.group(1) in US_STATE_ABBREVS:
+        return "United States"
+
+    # ── Canada ────────────────────────────────────────────────────────────────
+    if any(x in rl for x in ["canada", "quebec", "ontario", "british columbia",
+                               "alberta", "calgary", "toronto", "vancouver",
+                               "montreal", "ottawa", "winnipeg", "edmonton", "saskatoon"]):
         return "Canada"
-    if any(x in rl for x in ["europe", " eu", "uk", "france", "netherlands", "spain",
-                               "switzerland", "amsterdam", "nl", "paris"]):
+
+    # ── Europe ────────────────────────────────────────────────────────────────
+    if any(x in rl for x in ["europe", " eu"]):
         return "Europe"
-    if any(x in rl for x in ["australia", "aus", "new zealand", "nz", "oceania", "melbourne"]):
+    if any(x in rl for x in EUROPE_COUNTRIES):
+        return "Europe"
+    if any(x in rl for x in EUROPE_CITIES):
+        return "Europe"
+
+    # ── Australia / NZ ────────────────────────────────────────────────────────
+    if any(x in rl for x in ["australia", "new zealand", "oceania"]):
         return "Australia / NZ"
+    if any(x in rl for x in AUSTRALIA_NZ_CITIES):
+        return "Australia / NZ"
+    # "AU" / "NZ" / "NSW" / "VIC" / "QLD" suffix pattern
+    m2 = re.search(r',\s*(AU|NZ|NSW|VIC|QLD|WA|SA|TAS|ACT|NT)\s*$', s)
+    if m2:
+        return "Australia / NZ"
+
+    # ── Middle East ───────────────────────────────────────────────────────────
     if any(x in rl for x in ["middle east", "mideast", "uae", "oil money", "kuwait", "saudi"]):
         return "Middle East"
-    if any(x in rl for x in ["africa", "latin", "latam", "south america", "caribbean", "brazil"]):
+    if any(x in rl for x in MIDEAST_CITIES):
+        return "Middle East"
+
+    # ── Latin America / Africa ────────────────────────────────────────────────
+    if any(x in rl for x in ["africa", "latin", "latam", "south america", "caribbean", "brazil",
+                               "morocco", "kenya", "nigeria", "ghana"]):
         return "Latin America / Africa"
+    if any(x in rl for x in LATAM_AFRICA_CITIES):
+        return "Latin America / Africa"
+
     if "remote" in rl or "worldwide" in rl or "international" in rl:
         return "International / Remote"
     return None

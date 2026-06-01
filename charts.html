@@ -120,7 +120,7 @@
     <!-- ── Row 4: Regional breakdown (full width) ───────────────────────── -->
     <div class="chart-card">
       <h2>Listings by Region Over Time</h2>
-      <p>Among listings with regional data</p>
+      <p id="region-subtitle">Among listings with regional data</p>
       <div class="h-72"><canvas id="chart-region"></canvas></div>
     </div>
 
@@ -435,6 +435,9 @@ function updateTopAreas() {
 // 6. Region stacked bar
 function updateRegion() {
   const withRegion = FILTERED.filter(j => j.region_broad);
+  const pct = FILTERED.length ? Math.round(withRegion.length / FILTERED.length * 100) : 0;
+  document.getElementById('region-subtitle').textContent =
+    `Among listings with regional data (${pct}% of total)`;
   makeOrUpdate('chart-region', 'bar', YEAR_LABELS,
     pivotByYear(withRegion, 'region_broad', null),
     { scales: { x: { stacked: true, grid: { display: false } },
